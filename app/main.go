@@ -41,21 +41,26 @@ func main() {
 
 	\n adds a newline after the output. */
 
-	correlation_id := binary.BigEndian.Uint32(buffer[8:12]) //converted 4 bytes of buffer to uInt32, in big endian most significant byte comes first
-	message_size := uint32(26 - 4)                          //It should be the number of bytes in your response body + header, excluding the first 4 bytes (the message_size field itself).
+	correlation_id := binary.BigEndian.Uint32(buffer[4:8]) //converted 4 bytes of buffer to uInt32, in big endian most significant byte comes first
+	message_size := uint32(26 - 4)
+	api_version := binary.BigEndian.Uint16(buffer[2:4]) //It should be the number of bytes in your response body + header, excluding the first 4 bytes (the message_size field itself).
 	response := make([]byte, 16)
-	binary.BigEndian.PutUint32(response[0:4], message_size)
+	code := uint16(0)
+	if api_version > 4 {
+		code = uint16(35)
+	}
+	// binary.BigEndian.PutUint32(response[0:4], message_size)
 	binary.BigEndian.PutUint32(response[4:8], correlation_id) //pass uint32 correlation id , correlation id consits of 4 byte, each byte is of 2 hex digits
-	binary.BigEndian.PutUint16(response[8:10], 0)
-	binary.BigEndian.PutUint32(response[10:14], 1)
-	binary.BigEndian.PutUint16(response[14:16], 18)
-	response = append(response, 0x00, 0x00)                 // MinVersion = 0
-	response = append(response, 0x00, 0x04)                 // MaxVersion = 4
-	response = append(response, 0x00)                       // tagged fields
-	response = append(response, 0x00, 0x00, 0x00, 0x00)     // throttle time
-	response = append(response, 0x00)                       // tagged fields
-	message_size = uint32(len(response))                    // The actual length of the response buffer excluding the first 4 bytes
-	binary.BigEndian.PutUint32(response[0:4], message_size) // Update message_size with the correct total length
+	binary.BigEndian.PutUint16(response[8:10], code)
+	binary.BigEndian.PutUint32(response[10:14], 2)           // number of apis
+	binary.BigEndian.PutUint16(response[14:16], api_version) //aoi version
+	response = append(response, 0x00, 0x00)                  // MinVersion = 0
+	response = append(response, 0x00, 0x04)                  // MaxVersion = 4
+	response = append(response, 0x00)                        // tagged fields
+	response = append(response, 0x00, 0x00, 0x00, 0x00)      // throttle time
+	response = append(response, 0x00)                        // tagged fields
+	message_size = uint32(len(response))                     // The actual length of the response buffer excluding the first 4 bytes
+	binary.BigEndian.PutUint32(response[0:4], message_size)  // Update message_size with the correct total length
 	// response:= []byte{0,0,0,0,0,0,0,7} // just a hard coded way to send correlation id
 	fmt.Println(response)
 
