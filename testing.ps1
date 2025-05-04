@@ -25,7 +25,7 @@
 # $client.Close()
 
 # Convert the hex string to a byte array
-$hexString = "00000023001200046f7fc66100096b61666b612d636c69000a6b61666b612d636c6904302e3100"
+$hexString = "000000230012674a4f74d28b00096b61666b612d636c69000a6b61666b612d636c6904302e3100"
 $bytes = for ($i = 0; $i -lt $hexString.Length; $i += 2) {
     [Convert]::ToByte($hexString.Substring($i, 2), 16)
 }

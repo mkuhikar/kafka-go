@@ -42,9 +42,10 @@ func main() {
 	\n adds a newline after the output. */
 
 	correlation_id := binary.BigEndian.Uint32(buffer[8:12]) //converted 4 bytes of buffer to uInt32, in big endian most significant byte comes first
-	response := make([]byte, 8)
+	response := make([]byte, 10)
 	binary.BigEndian.PutUint32(response[0:4], 0)
 	binary.BigEndian.PutUint32(response[4:8], correlation_id) //pass uint32 correlation id , correlation id consits of 4 byte, each byte is of 2 hex digits
+	binary.BigEndian.PutUint16(response[8:10], 35)
 	// response:= []byte{0,0,0,0,0,0,0,7} // just a hard coded way to send correlation id
 	fmt.Println(response)
 
