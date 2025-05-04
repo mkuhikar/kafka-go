@@ -28,11 +28,24 @@ func main() {
 		os.Exit(1)
 	}
 	defer conn.Close()
+	buffer := make([]byte, 512)
 
+	n, err := conn.Read(buffer) //The buffer is a pre-allocated memory slice (512 bytes in this case) used to store incoming data from the client.
+	if err != nil {
+		fmt.Println("Error reading request:", err.Error())
+		os.Exit(1)
+	}
+	fmt.Printf("the no of bytes received from client are %d", n) /*fmt.Printf allows formatted strings, just like printf in C.
+
+	%d is a placeholder for an integer — here, it's replaced with the value of n.
+
+	\n adds a newline after the output. */
+
+	correlation_id := binary.BigEndian.Uint32(buffer[8:12]) //converted 4 bytes of buffer to uInt32, in big endian most significant byte comes first
 	response := make([]byte, 8)
 	binary.BigEndian.PutUint32(response[0:4], 0)
-	binary.BigEndian.PutUint32(response[4:8], 7)
-	// response:= []byte{0,0,0,0,0,0,0,7}
+	binary.BigEndian.PutUint32(response[4:8], correlation_id) //pass uint32 correlation id , correlation id consits of 4 byte, each byte is of 2 hex digits
+	// response:= []byte{0,0,0,0,0,0,0,7} // just a hard coded way to send correlation id
 	fmt.Println(response)
 
 	_, err = conn.Write(response)
