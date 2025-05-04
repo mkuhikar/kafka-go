@@ -54,7 +54,7 @@ func main() {
 	response = append(response, 0x00)                       // tagged fields
 	response = append(response, 0x00, 0x00, 0x00, 0x00)     // throttle time
 	response = append(response, 0x00)                       // tagged fields
-	message_size = uint32(len(response[4:]))                // The actual length of the response buffer excluding the first 4 bytes
+	message_size = uint32(len(response))                    // The actual length of the response buffer excluding the first 4 bytes
 	binary.BigEndian.PutUint32(response[0:4], message_size) // Update message_size with the correct total length
 	// response:= []byte{0,0,0,0,0,0,0,7} // just a hard coded way to send correlation id
 	fmt.Println(response)
