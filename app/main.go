@@ -32,6 +32,8 @@ func main() {
 	response := make([]byte, 8)
 	binary.BigEndian.PutUint32(response[0:4], 0)
 	binary.BigEndian.PutUint32(response[4:8], 7)
+	// response:= []byte{0,0,0,0,0,0,0,7}
+	fmt.Println(response)
 
 	_, err = conn.Write(response)
 	if err != nil {
