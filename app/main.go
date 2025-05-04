@@ -41,26 +41,56 @@ func main() {
 
 	\n adds a newline after the output. */
 
-	correlation_id := binary.BigEndian.Uint32(buffer[4:8]) //converted 4 bytes of buffer to uInt32, in big endian most significant byte comes first
-	message_size := uint32(26 - 4)
-	api_version := binary.BigEndian.Uint16(buffer[2:4]) //It should be the number of bytes in your response body + header, excluding the first 4 bytes (the message_size field itself).
-	response := make([]byte, 16)
+	// correlation_id := binary.BigEndian.Uint32(buffer[4:8]) //converted 4 bytes of buffer to uInt32, in big endian most significant byte comes first
+	// message_size := uint32(26 - 4)
+	// api_version := binary.BigEndian.Uint16(buffer[2:4]) //It should be the number of bytes in your response body + header, excluding the first 4 bytes (the message_size field itself).
+	// Prepare values
+	correlation_id := binary.BigEndian.Uint32(buffer[4:8])
+	api_version := binary.BigEndian.Uint16(buffer[2:4])
 	code := uint16(0)
 	if api_version > 4 {
-		code = uint16(35)
+		code = 35
 	}
-	// binary.BigEndian.PutUint32(response[0:4], message_size)
-	binary.BigEndian.PutUint32(response[4:8], correlation_id) //pass uint32 correlation id , correlation id consits of 4 byte, each byte is of 2 hex digits
-	binary.BigEndian.PutUint16(response[8:10], code)
-	binary.BigEndian.PutUint32(response[10:14], 2)           // number of apis
-	binary.BigEndian.PutUint16(response[14:16], api_version) //aoi version
-	response = append(response, 0x00, 0x00)                  // MinVersion = 0
-	response = append(response, 0x00, 0x04)                  // MaxVersion = 4
-	response = append(response, 0x00)                        // tagged fields
-	response = append(response, 0x00, 0x00, 0x00, 0x00)      // throttle time
-	response = append(response, 0x00)                        // tagged fields
-	message_size = uint32(len(response))                     // The actual length of the response buffer excluding the first 4 bytes
-	binary.BigEndian.PutUint32(response[0:4], message_size)  // Update message_size with the correct total length
+
+	// Use a buffer to construct the response dynamically
+	var response []byte
+
+	// Reserve space for message size (4 bytes, to be filled later)
+	response = append(response, 0, 0, 0, 0)
+
+	// Correlation ID (4 bytes)
+	tmp := make([]byte, 4)
+	binary.BigEndian.PutUint32(tmp, correlation_id)
+	response = append(response, tmp...)
+
+	// Error Code (2 bytes)
+	tmp = make([]byte, 2)
+	binary.BigEndian.PutUint16(tmp, code)
+	response = append(response, tmp...)
+
+	// Number of APIs (1 byte)
+	response = append(response, 2)
+
+	// First API Key (18), MinVersion (3), MaxVersion (4)
+	tmp = make([]byte, 6)
+	binary.BigEndian.PutUint16(tmp[0:2], 18)
+	binary.BigEndian.PutUint16(tmp[2:4], 3)
+	binary.BigEndian.PutUint16(tmp[4:6], 4)
+	response = append(response, tmp...)
+
+	// Tagged fields for API list (1 byte)
+	response = append(response, 0)
+
+	// Throttle time (4 bytes)
+	tmp = make([]byte, 4)
+	binary.BigEndian.PutUint32(tmp, 0)
+	response = append(response, tmp...)
+
+	// Tagged fields for throttle time (1 byte)
+	response = append(response, 0)
+
+	// Set message size at the beginning (excluding the 4 bytes for size itself)
+	binary.BigEndian.PutUint32(response[0:4], uint32(len(response)-4))
 	// response:= []byte{0,0,0,0,0,0,0,7} // just a hard coded way to send correlation id
 	fmt.Println(response)
 
