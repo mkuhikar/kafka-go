@@ -49,8 +49,11 @@ func main() {
 	binary.BigEndian.PutUint16(response[8:10], 0)
 	binary.BigEndian.PutUint32(response[10:14], 1)
 	binary.BigEndian.PutUint16(response[14:16], 18)
-	response = append(response, 0x00, 0x00) // MinVersion = 0
-	response = append(response, 0x00, 0x04) // MaxVersion = 4
+	response = append(response, 0x00, 0x00)             // MinVersion = 0
+	response = append(response, 0x00, 0x04)             // MaxVersion = 4
+	response = append(response, 0x00)                   // tagged fields
+	response = append(response, 0x00, 0x00, 0x00, 0x00) // throttle time
+	response = append(response, 0x00)                   // tagged fields
 	// response:= []byte{0,0,0,0,0,0,0,7} // just a hard coded way to send correlation id
 	fmt.Println(response)
 
