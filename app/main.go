@@ -41,7 +41,7 @@ func main() {
 
 	\n adds a newline after the output. */
 
-	correlation_id := binary.BigEndian.Uint32(buffer[4:8]) //converted 4 bytes of buffer to uInt32, in big endian most significant byte comes first
+	correlation_id := binary.BigEndian.Uint32(buffer[8:12]) //converted 4 bytes of buffer to uInt32, in big endian most significant byte comes first
 	// message_size := uint32(26 - 4)                          //It should be the number of bytes in your response body + header, excluding the first 4 bytes (the message_size field itself).
 	// response := make([]byte, 16)
 	// binary.BigEndian.PutUint32(response[0:4], message_size)
@@ -61,29 +61,39 @@ func main() {
 	// response:= []byte{0,0,0,0,0,0,0,7} // just a hard coded way to send correlation id
 	var response []byte
 
-	response = append(response, 0, 0, 0, 0) // placeholder for message size
+	// Reserve first 4 bytes for message size
+	response = append(response, 0, 0, 0, 0)
 
-	tmp := make([]byte, 4)
-	binary.BigEndian.PutUint32(tmp, correlation_id)
-	response = append(response, tmp...) // correlation_id
+	// Correlation ID
+	tmp4 := make([]byte, 4)
+	binary.BigEndian.PutUint32(tmp4, correlation_id)
+	response = append(response, tmp4...)
 
-	tmp = make([]byte, 2)
-	binary.BigEndian.PutUint16(tmp, 0)
-	response = append(response, tmp...) // error code = 0
+	// Error Code = 0
+	tmp2 := make([]byte, 2)
+	binary.BigEndian.PutUint16(tmp2, 0)
+	response = append(response, tmp2...)
 
-	response = append(response, 1) // num_apis = 1
+	// Number of API keys = 1
+	response = append(response, 1) // <-- this must come exactly here
 
-	tmp = make([]byte, 6)
-	binary.BigEndian.PutUint16(tmp[0:2], 18) // api key
-	binary.BigEndian.PutUint16(tmp[2:4], 0)  // min version
-	binary.BigEndian.PutUint16(tmp[4:6], 4)  // max version
-	response = append(response, tmp...)
+	// API Key block
+	apiBlock := make([]byte, 6)
+	binary.BigEndian.PutUint16(apiBlock[0:2], 18)
+	binary.BigEndian.PutUint16(apiBlock[2:4], 0) // MinVersion
+	binary.BigEndian.PutUint16(apiBlock[4:6], 4) // MaxVersion
+	response = append(response, apiBlock...)
 
-	response = append(response, 0x00)                   // tagged fields
-	response = append(response, 0x00, 0x00, 0x00, 0x00) // throttle time
-	response = append(response, 0x00)                   // tagged fields
+	// Tagged fields = 0
+	response = append(response, 0x00)
 
-	// Now fix the message size (excluding the 4 bytes for the size itself)
+	// Throttle time = 0
+	response = append(response, 0x00, 0x00, 0x00, 0x00)
+
+	// Tagged fields = 0
+	response = append(response, 0x00)
+
+	// Now fix message size (total - 4 bytes)
 	binary.BigEndian.PutUint32(response[0:4], uint32(len(response)-4))
 	fmt.Println(response)
 
