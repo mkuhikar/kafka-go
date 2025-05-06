@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"net"
@@ -80,49 +81,43 @@ func main() {
 	// message_size = uint32(len(response))                    // The actual length of the response buffer excluding the first 4 bytes
 	// binary.BigEndian.PutUint32(response[0:4], message_size) // Update message_size with the correct total length
 	// response:= []byte{0,0,0,0,0,0,0,7} // just a hard coded way to send correlation id
-	var response []byte
-
-	// Reserve first 4 bytes for message size
-	response = append(response, 0, 0, 0, 0)
+	var response bytes.Buffer
 
 	// Correlation ID
-	tmp4 := make([]byte, 4)
-	binary.BigEndian.PutUint32(tmp4, correlation_id)
-	response = append(response, tmp4...)
+	binary.Write(&response, binary.BigEndian, int32(correlation_id))
 
-	// Error Code = 0
-	tmp2 := make([]byte, 2)
-	binary.BigEndian.PutUint16(tmp2, 0)
-	response = append(response, tmp2...)
+	// Error Code (set to 0)
+	binary.Write(&response, binary.BigEndian, int16(0))
 
-	// Number of API keys = 1
-	response = append(response, 2) // <-- this must come exactly here
+	// Number of API keys (set to 2, should be INT8)
+	binary.Write(&response, binary.BigEndian, int8(2))
 
-	// API Key block
-	apiBlock := make([]byte, 6)
-	binary.BigEndian.PutUint16(apiBlock[0:2], 18)
-	binary.BigEndian.PutUint16(apiBlock[2:4], 0) // MinVersion
-	binary.BigEndian.PutUint16(apiBlock[4:6], 4) // MaxVersion
-	response = append(response, apiBlock...)
+	// API Key Entry for ApiVersions (18)
+	binary.Write(&response, binary.BigEndian, int16(18)) // api_key
+	binary.Write(&response, binary.BigEndian, int16(0))  // min_version
+	binary.Write(&response, binary.BigEndian, int16(4))  // max_version
 
-	// Tagged fields = 0
-	response = append(response, 0x00)
+	// Tagged fields (set to INT8, always 0)
+	binary.Write(&response, binary.BigEndian, int8(0))
 
-	// Throttle time = 0
-	response = append(response, 0x00, 0x00, 0x00, 0x00)
+	// Throttle time (set to 0)
+	binary.Write(&response, binary.BigEndian, int32(0))
 
-	// Tagged fields = 0
-	response = append(response, 0x00)
+	// Tagged fields (set to INT8, always 0) after throttle_time_ms
+	binary.Write(&response, binary.BigEndian, int8(0))
 
-	// Now fix message size (total - 4 bytes)
-	binary.BigEndian.PutUint32(response[0:4], uint32(len(response)-4))
-	fmt.Println("Kafka broker response: ", response)
+	// Now fix message size (total - 4 bytes for the size itself)
+	messageSize := make([]byte, 4)
+	binary.BigEndian.PutUint32(messageSize, uint32(response.Len())) // Include the message size
+	if _, err := conn.Write(messageSize); err != nil {
+		fmt.Println("Error writing response size: ", err.Error())
+		os.Exit(1)
+	}
 
-	_, err = conn.Write(response)
-	if err != nil {
+	// Write the full response
+	if _, err := conn.Write(response.Bytes()); err != nil {
 		fmt.Println("Error writing response: ", err.Error())
 		os.Exit(1)
-
 	}
 	// fmt.Println("Here ", l)
 
