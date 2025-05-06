@@ -57,7 +57,7 @@ func main() {
 	// correlation_id := binary.BigEndian.Uint32(buffer[4:8]) //converted 4 bytes of buffer to uInt32, in big endian most significant byte comes first
 	apiKey := binary.BigEndian.Uint16(buffer[4:6])
 	apiVersion := binary.BigEndian.Uint16(buffer[6:8])
-	correlation_id := binary.BigEndian.Uint32(buffer[8:12])
+	correlation_id := binary.BigEndian.Uint32(buffer[4:8])
 
 	fmt.Printf("API Key: %d\n", apiKey)
 	fmt.Printf("API Version: %d\n", apiVersion)
@@ -96,7 +96,7 @@ func main() {
 	response = append(response, tmp2...)
 
 	// Number of API keys = 1
-	response = append(response, 1) // <-- this must come exactly here
+	response = append(response, 2) // <-- this must come exactly here
 
 	// API Key block
 	apiBlock := make([]byte, 6)
