@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 )
 
 // Ensures gofmt doesn't remove the "net" and "os" imports in stage 1 (feel free to remove this!)
@@ -43,29 +44,31 @@ func main() {
 
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
+	for {
 
-	req, err := parseRequest(conn)
-	if err != nil {
-		fmt.Println("Error parsing request: ", err.Error())
-		return
-	}
-	fmt.Println("Received request: ", req)
+		req, err := parseRequest(conn)
+		if err != nil {
+			fmt.Println("Error parsing request: ", err.Error())
+			return
+		}
+		fmt.Println("Received request: ", req)
 
-	// Switch req.ApiVersion is within range of 0-4
-	// set erroCode to 0 if it is within range, else set it to 35
-	var errorCode int16
-	if req.RequestApiVersion < 0 || req.RequestApiVersion > 4 {
-		fmt.Println("Error: ApiVersion out of range")
-		errorCode = 35
-	} else {
-		fmt.Println("ApiVersion is within range")
-		errorCode = 0
-	}
+		// Switch req.ApiVersion is within range of 0-4
+		// set erroCode to 0 if it is within range, else set it to 35
+		var errorCode int16
+		if req.RequestApiVersion < 0 || req.RequestApiVersion > 4 {
+			fmt.Println("Error: ApiVersion out of range")
+			errorCode = 35
+		} else {
+			fmt.Println("ApiVersion is within range")
+			errorCode = 0
+		}
 
-	writeResponse(conn, req, errorCode)
-	if err != nil {
-		fmt.Println("Error writing response: ", err.Error())
-		return
+		writeResponse(conn, req, errorCode)
+		if err != nil {
+			fmt.Println("Error writing response: ", err.Error())
+			return
+		}
 	}
 }
 
@@ -111,6 +114,7 @@ func parseRequest(conn net.Conn) (*Request, error) {
 	payload := make([]byte, messageSize)
 	read := 0
 	for read < int(messageSize) {
+		conn.SetReadDeadline(time.Now().Add(2 * time.Second))
 		n, err := conn.Read(payload[read:])
 		if err != nil {
 			return nil, fmt.Errorf("failed to read message payload: %v", err)
